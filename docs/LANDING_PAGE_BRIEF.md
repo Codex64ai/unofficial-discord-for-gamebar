@@ -9,12 +9,12 @@ product does. Assets are in the GitHub repo (`docs/images/`, `installer/`).
 Unofficial Discord for Gamebar is a free, open-source Xbox Game Bar widget for Windows 11 handhelds
 (built and tested on the ROG Xbox Ally X). It puts Discord's official web app inside Game Bar so you
 can press the Xbox button, open Discord over your game, chat, join voice, then close Game Bar and keep
-playing while the call keeps running. A controller back paddle works as push-to-talk the whole time,
-with Game Bar open or closed. It is not made by Discord and does not touch Discord's API; it displays
+playing while the call keeps running. Push-to-talk is the Numpad * key, so any controller button mapped to it
+(M1, M2, a back paddle) works as push-to-talk, with Game Bar open or closed. It is not made by Discord and does not touch Discord's API; it displays
 discord.com exactly the way a browser does.
 
 Tagline options: "Discord, in your Game Bar." · "Voice chat that survives closing Game Bar." ·
-"Your paddle is the push-to-talk key."
+"Any button can be your push-to-talk key."
 
 ## 2. The problem it solves (the "why")
 
@@ -33,7 +33,8 @@ talk.
 2. **Voice keeps running with Game Bar closed.** Join a channel or a call, press the Xbox button, play.
    The widget holds Game Bar's microphone activity for the length of the call so Windows lets a hidden
    app keep using audio. Game Bar shows a small mic badge while this is active (see section 6).
-3. **Push-to-talk on a back paddle.** Tap the paddle to toggle mute; hold it to talk while held. Presses
+3. **Push-to-talk on any button you choose.** Push-to-talk is Numpad `*`; map M1, M2, a back paddle or
+   any button to it. Tap to toggle mute; hold to talk while held. Presses
    are read by a tiny helper process inside the package, so they arrive whether Game Bar is open or not,
    and the key is swallowed so it never reaches the game. A press takes about 50 ms.
 4. **Touch keyboard that appears.** Tap a text field inside Game Bar and the keyboard comes up (Game Bar
@@ -62,7 +63,7 @@ talk.
 ## 5. Requirements and install (for a "Get it" section)
 
 - Windows 11 with Xbox Game Bar; the WebView2 Runtime (present on Windows 11); a Discord account.
-- Tested on ROG Xbox Ally X. Other Game Bar devices should work; paddle push-to-talk needs the device's
+- Tested on ROG Xbox Ally X. Other Game Bar devices should work; push-to-talk needs the device's
   button-mapping software to send a keyboard key (Armoury Crate SE on ASUS).
 - **Today: GitHub release.** Download `UnofficialDiscordForGamebar-Setup.exe`, run it. For the beta it
   installs the package and its self-signed certificate (Windows asks for admin once).
@@ -73,15 +74,18 @@ talk.
 ## 6. Paddle setup guide (a dedicated section; users need this)
 
 1. Armoury Crate SE → Settings → Control Mode → Configure.
-2. Gamepad Mode tab → back button M2 → keyboard key → **NumPad \***.
+2. Gamepad Mode tab → the button you want (M1, M2, …) → keyboard key → **NumPad \***.
 3. Desktop Mode tab → same.
 4. Command Center button → set **Control Mode to Gamepad** (not Auto).
-5. In a call: tap M2 to toggle, hold M2 to talk.
+5. In a call: tap the button to toggle, hold it to talk.
+
+Legion Go and other handhelds: map any button to Numpad `*` in the device's own software (Legion Space
+on the Legion Go). Say "should work, not yet tested" until someone confirms.
 
 Why step 4: Armoury's Auto mode uses Gamepad mode for packaged apps and Store games and Desktop mode for
 classic windows (Edge, the desktop, unrecognized games). In Desktop mode the controller firmware emits
-nothing for NumPad `*` on tested units, so the paddle goes dead in those apps. Forcing Gamepad mode makes
-it work everywhere. (Inside Armoury Crate's own window the paddle never fires; that's by design.)
+nothing for NumPad `*` on tested units, so the button goes dead in those apps. Forcing Gamepad mode makes
+it work everywhere. (Inside Armoury Crate's own window the button never fires; that's by design.)
 
 Keys the widget accepts: Numpad `* / - + .`, F13–F16, Pause, Scroll Lock. Recommend Numpad `*`.
 
@@ -100,7 +104,7 @@ call."
 - Why the desktop layout and not the phone layout? Discord blocks voice from mobile browsers.
 - How much memory does it use? About 780 MB open, about 400 MB hidden in a call, about 90 MB after four
   idle minutes (engine shut down). Numbers measured on the Ally.
-- Does the paddle key reach my game? No. The helper swallows it while connected.
+- Does the push-to-talk key reach my game? No. The helper swallows it while connected.
 - Can I use a different key? Yes, any in the list above.
 - Where are the logs? `%LOCALAPPDATA%\Packages\DiscordBar.Widget_*\LocalState\power.log` (state changes
   only, no messages). Attach to bug reports.
@@ -137,5 +141,5 @@ screenshot shortcut):
 1. Discord open inside Game Bar, full screen, with the Back/Home/Mic strip visible.
 2. A game running with Game Bar closed, the mic badge visible in a corner, a voice call ongoing.
 3. The touch keyboard open over a Discord text field inside Game Bar.
-4. Armoury Crate's Gamepad Mode mapping page showing M2 = NumPad * (already available as a photo).
+4. Armoury Crate's Gamepad Mode mapping page showing a button mapped to NumPad * (already available as a photo).
 5. Optional: Task Manager showing the widget's memory after it idled down.

@@ -6,7 +6,7 @@
 
 Discord's web app as an **Xbox Game Bar widget**, built for Windows handhelds like the ROG Xbox Ally X.
 Press the Xbox button, tap Discord, chat, join voice, close Game Bar and keep playing: the call keeps
-running, and a controller paddle works as push-to-talk the whole time.
+running, and push-to-talk works from any controller button you map to it.
 
 > **Unofficial.** This project is not affiliated with, endorsed by or sponsored by Discord Inc. It embeds
 > the official web app at discord.com inside a Microsoft Edge WebView2 control, exactly as a browser
@@ -22,7 +22,7 @@ Coming with the public beta.
 | | |
 |---|---|
 | ![Discord open in Game Bar](docs/images/widget-open.jpg) <br> *Full screen inside Game Bar, Back / Home / Mic strip on top* | ![Voice call with Game Bar closed](docs/images/voice-hidden.jpg) <br> *In a call with Game Bar closed: the mic badge is Game Bar keeping the audio alive* |
-| ![Touch keyboard](docs/images/keyboard.jpg) <br> *The Game Bar touch keyboard typing into Discord* | ![Paddle mapped to Numpad *](docs/images/armoury-m2.jpg) <br> *Armoury Crate: back paddle M2 mapped to Numpad `*`* |
+| ![Touch keyboard](docs/images/keyboard.jpg) <br> *The Game Bar touch keyboard typing into Discord* | ![Button mapped to Numpad *](docs/images/armoury-m2.jpg) <br> *Armoury Crate: a back button mapped to Numpad `*`* |
 -->
 
 ## What you get
@@ -30,8 +30,9 @@ Coming with the public beta.
 - **Discord, full screen, inside Game Bar.** The widget asks Game Bar for the largest window it will grant
   and centers it. The desktop layout is used on purpose (Discord blocks voice on mobile browsers).
 - **Voice that survives closing Game Bar.** Join a channel or a call, press the Xbox button to get back
-  to the game, and the call keeps going. Mute and unmute from the paddle without opening Game Bar.
-- **Push-to-talk on a controller paddle.** Tap to toggle the mic, hold to talk while held. Works whether
+  to the game, and the call keeps going. Mute and unmute from your push-to-talk button without opening Game Bar.
+- **Push-to-talk on any controller button.** Push-to-talk is the Numpad `*` key; map M1, M2, a back
+  paddle or any other button to it. Tap to toggle the mic, hold to talk while held. Works whether
   Game Bar is open or closed, and the key never leaks into the game.
 - **Touch keyboard** that actually appears when you tap a text field inside Game Bar.
 - **Back and Home buttons** on a slim strip above the page, so a Discord help page or a link never traps
@@ -46,8 +47,9 @@ Coming with the public beta.
 - Windows 11 with Xbox Game Bar (the handheld compact UI or the desktop one).
 - Microsoft Edge WebView2 Runtime (already present on Windows 11).
 - A Discord account. Everything else is Discord's own web app.
-- Tested on the ROG Xbox Ally X. Any Game Bar device should work; paddle push-to-talk needs a way to map
-  a controller button to a keyboard key (Armoury Crate on ASUS, the equivalent on other handhelds).
+- Tested on the ROG Xbox Ally X. Any Game Bar device should work; push-to-talk needs a way to map a
+  controller button to a keyboard key (Armoury Crate SE on the ROG Ally, Legion Space on the Legion Go,
+  or your device's equivalent).
 
 ## Install
 
@@ -60,14 +62,14 @@ Then press the **Xbox button** (or `Win+G`), open the widget menu, and pick **Un
 Pin it or make it a favorite so it sits in the home bar. Sign in with the QR code or your credentials.
 Close the desktop Discord app if you have it, so Discord isn't running twice.
 
-## Push-to-talk on a paddle, in detail
+## Push-to-talk, in detail
 
 ### How it works
 
 Game Bar gives widgets exactly one way to receive keys while they're hidden, the
 `XboxGameBarHotkeyWatcher` API, and on the Ally it only delivers while Game Bar is open or for a few
-seconds after it closes. Once Game Bar dozes, presses vanish until it's opened again. That made the
-paddle "hit or miss", which is unusable for push-to-talk.
+seconds after it closes. Once Game Bar dozes, presses vanish until it's opened again. That made push-to-talk
+"hit or miss", which is unusable for push-to-talk.
 
 So the package ships a second, tiny process: **the key helper** (`DiscordBar.KeyHelper.exe`, 9 KB).
 The widget launches it on start. It installs a low-level keyboard hook, the same mechanism Game Bar
@@ -75,14 +77,14 @@ itself uses, and:
 
 1. watches only the push-to-talk keys listed below,
 2. forwards each press and release to the widget over an in-package Windows app service,
-3. **swallows the key** while it's connected, so a paddle mapped to Numpad `*` never types a `*` into a
+3. **swallows the key** while it's connected, so a button mapped to Numpad `*` never types a `*` into a
    game, a chat box or a browser,
 4. verifies every delivery, drops a dead link immediately and reconnects, re-installs its hook every
    30 s, pings the widget every 30 s, and exits about a minute after the widget is gone.
 
 The widget then reads Discord's **real** mute state from Discord's own mute button and flips it with a
 single click of that button. There's no local memory of the state, so muting from Discord's UI, from
-the widget's mic button or from the paddle can never get out of sync. A press takes about 50 ms.
+the widget's mic button or from your button can never get out of sync. A press takes about 50 ms.
 
 Two gestures, both at once:
 
@@ -106,14 +108,24 @@ a press is never counted twice.
 | Pause, Scroll Lock | Rarely bound by games. |
 | Ctrl+Alt+M, Ctrl+Alt+V, Ctrl+Alt+T | Game Bar watcher only (not the helper). Avoid: modifier combos leak into games (crouch, menus). |
 
-### Setting it up on the ROG Ally (Armoury Crate SE)
+### Mapping a button
+
+The widget listens for **Numpad `*`** (or any key in the table above). Map whichever controller button
+you like to it: M1, M2, a back paddle, a spare face button.
+
+**ROG Ally / Ally X (Armoury Crate SE),** the tested setup:
 
 1. Open Armoury Crate SE, go to Settings, Control Mode, Configure.
-2. Open the **Gamepad Mode** tab, choose back button **M2**, assign a keyboard key, pick **NumPad \***.
-3. Open the **Desktop Mode** tab and do the same. Both tabs must show NumPad `*` for M2.
+2. Open the **Gamepad Mode** tab, choose the button you want (for example M1 or M2), assign a keyboard
+   key, pick **NumPad \***.
+3. Open the **Desktop Mode** tab and map the same button the same way. Both tabs must match.
 4. Press the Command Center button and set **Control Mode** to **Gamepad**, not Auto (see below).
 
-### Why the paddle can go dead in some apps (and the fix)
+**Legion Go and other Windows handhelds:** use the device's own mapping software (Legion Space on the
+Legion Go) to send Numpad `*` from the button of your choice. Not yet tested on those devices; reports
+welcome.
+
+### Why the button can go dead in some apps on the Ally (and the fix)
 
 Armoury Crate's **Auto** control mode switches between Gamepad mode and Desktop mode based on the app in
 front. Packaged apps (Store games, Windows Terminal, the Start menu) get Gamepad mode, where Armoury's
@@ -121,7 +133,7 @@ software injects the key and everything works. Classic windows (Edge, the bare d
 Armoury doesn't recognize) get Desktop mode, where the key is produced by the controller firmware,
 which on tested units emits nothing for NumPad `*`. The widget can't do anything about a key that was
 never sent. Forcing **Control Mode = Gamepad** fixes it everywhere. Inside Armoury Crate's own window
-the paddle never fires; Armoury reserves it there.
+the button never fires; Armoury reserves it there.
 
 ## About the microphone badge
 
@@ -183,8 +195,8 @@ target set to low whenever the widget is pinned over a game or hidden in a call.
 
 | Symptom | Cause and fix |
 |---|---|
-| Paddle works in some apps, not in Edge or on the desktop | Armoury Crate Auto control mode. Set Control Mode to Gamepad (above). |
-| Paddle does nothing anywhere | Check M2 shows NumPad `*` in both Armoury tabs. Then open Game Bar once so the widget relaunches the key helper. |
+| Push-to-talk works in some apps, not in Edge or on the desktop (Ally) | Armoury Crate Auto control mode. Set Control Mode to Gamepad (above). |
+| Push-to-talk does nothing anywhere | Check your button sends NumPad `*` (on the Ally, in both Armoury tabs). Then open Game Bar once so the widget relaunches the key helper. |
 | Mic badge vanished and the call went silent | The badge was tapped. Open Game Bar, the widget re-requests the activity. |
 | "Unsupported Browser" when joining voice | Something changed the user agent; file an issue with your version. |
 | Keyboard doesn't appear | Tap the field once more. If it never appears, reinstall: the Game Bar proxy/stub registration in the package manifest is what makes keyboards work. |

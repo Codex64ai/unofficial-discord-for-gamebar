@@ -8,7 +8,7 @@ compact/handheld UI).
 - Discord's web app as a full-screen Game Bar widget, with Back and Home buttons on the widget's own strip.
 - Voice chat keeps working with Game Bar closed: the widget holds Game Bar's microphone activity for the
   length of a call and keeps the mic capture open across mutes.
-- Push-to-talk on a controller paddle: tap to toggle, hold to talk. Keys are read by a small in-package
+- Push-to-talk on any controller button mapped to Numpad `*`: tap to toggle, hold to talk. Keys are read by a small in-package
   helper so presses arrive whether Game Bar is open or not, and never reach the game.
 - Touch keyboard works inside Game Bar (invisible text-box bridge).
 - Three idle tiers when hidden and not in a call: suspend after 10 s, unload the page after 45 s, close the
