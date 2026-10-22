@@ -71,6 +71,23 @@ Goal: same behavior, nothing in the package that exists only for debugging, numb
 6. Known risk: the app name and mark. If certification objects under the IP/branding policy, the plan is
    a second submission under a non-Discord name and the same mark; nothing else changes.
 
+### B2. Store listing compliance checklist (Microsoft Store policies)
+- **10.1 Accurate representation:** description states it is an unofficial third-party client showing
+  Discord's web app; not affiliated with Discord Inc. or Microsoft; no Discord or Xbox logos in the icon,
+  screenshots' chrome or promotional art.
+- **11.2 / name reservation:** "Discord" in the title may be refused; fallback name ready, same mark.
+- **10.5 Privacy:** public privacy policy URL (PRIVACY.md hosted on the landing page); description says the
+  microphone is used only for Discord voice; no data collected.
+- **10.2 Security + restricted capability:** `runFullTrust` justification in the submission: the key helper
+  watches only the listed push-to-talk keys for a controller paddle, stores and transmits nothing; the
+  same disclosure appears in the description (undisclosed keystroke capture fails certification).
+- **11.3 Age rating:** IARC answered truthfully (user-generated content, chat, unrestricted web); expect
+  Teen or higher.
+- **Listing essentials:** ≥1 screenshot at 1366×768+, description, category Social, support contact,
+  notes for certification (sign-in steps, voice needs a second account, which key the paddle sends).
+- **Technical:** WACK pass; clean launch with no network and no sign-in; Store-assigned package identity
+  in the manifest for the Store build (sideload installs become a separate app; users reinstall once).
+
 ### C. Landing page (your website)
 - One static page plus a privacy policy page, e.g. `discord.codex64.net` or `/gamebar-discord`, hosted
   on Cloudflare Pages or the existing droplet behind the tunnel.
