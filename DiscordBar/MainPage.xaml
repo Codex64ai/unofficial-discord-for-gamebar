@@ -1,0 +1,81 @@
+<Page
+    x:Class="DiscordBar.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    Background="#313338">
+    <Grid x:Name="Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Our own strip under Game Bar's title bar: controls live here, not on top of Discord's page. -->
+        <Grid x:Name="TopBar" Grid.Row="0" Height="40" Background="#2B2D31" Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0,0,0" Spacing="6">
+                <Button x:Name="BackButton" Width="32" Height="32" Padding="0" CornerRadius="16"
+                        Background="#3F4248" BorderThickness="0"
+                        ToolTipService.ToolTip="Back" Click="BackButton_Click">
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="14" Foreground="White" />
+                </Button>
+                <Button x:Name="HomeButton" Width="32" Height="32" Padding="0" CornerRadius="16"
+                        Background="#3F4248" BorderThickness="0"
+                        ToolTipService.ToolTip="Discord home" Click="BackHomeButton_Click">
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE80F;" FontSize="14" Foreground="White" />
+                </Button>
+            </StackPanel>
+            <Button x:Name="MicButton"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Margin="0,0,8,0"
+                    Width="32" Height="32"
+                    Padding="0"
+                    CornerRadius="16"
+                    Background="#3F4248"
+                    BorderThickness="0"
+                    ToolTipService.ToolTip="Mute / unmute"
+                    Click="MicButton_Click">
+                <FontIcon x:Name="MicIcon" FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;" FontSize="14" Foreground="White" />
+            </Button>
+        </Grid>
+
+        <controls:WebView2 x:Name="Web" Grid.Row="1" />
+
+        <!-- Invisible landing spot for the touch keyboard. XAML text boxes get the keyboard inside
+             Game Bar; WebView2 does not. Whatever lands here is relayed into the page. -->
+        <TextBox x:Name="KeyBox"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                 Width="1" Height="1" MinWidth="1" MinHeight="1"
+                 Opacity="0" IsTabStop="True"
+                 IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                 TextChanged="KeyBox_TextChanged"
+                 TextCompositionStarted="KeyBox_CompositionStarted"
+                 TextCompositionEnded="KeyBox_CompositionEnded"
+                 KeyDown="KeyBox_KeyDown" />
+
+        <!-- Escape hatch when the page wanders off the app (terms, blog...) with no way back. -->
+        <Button x:Name="BackHomeButton"
+                Grid.Row="1"
+                Visibility="Collapsed"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="6,6,0,0" Padding="10,6"
+                Background="#CC000000" Foreground="White" BorderThickness="0" CornerRadius="6"
+                Click="BackHomeButton_Click">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="12" />
+                <TextBlock Text="Back to Discord" FontSize="12" />
+            </StackPanel>
+        </Button>
+
+        <!-- Brief status note (e.g. when Game Bar refuses a resize). Hidden unless needed. -->
+        <Border x:Name="NoticeHost"
+                Grid.Row="1"
+                Visibility="Collapsed"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                Margin="0,10,0,0" Padding="10,6"
+                Background="#CC000000" CornerRadius="6"
+                IsHitTestVisible="False">
+            <TextBlock x:Name="Notice" FontSize="12" Foreground="White"
+                       TextWrapping="Wrap" MaxWidth="320" TextAlignment="Center" />
+        </Border>
+    </Grid>
+</Page>
