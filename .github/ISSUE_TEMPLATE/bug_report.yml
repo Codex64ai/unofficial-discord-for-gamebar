@@ -1,0 +1,52 @@
+name: Bug report
+description: Something doesn't work as described in the README
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Most issues can be pinned down from the widget's own log, so please attach it (see the last field).
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Settings > Apps > Unofficial Discord for Gamebar, or the installer file name
+      placeholder: 1.0.0.0
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and Windows version
+      placeholder: ROG Xbox Ally X, Windows 11 24H2
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Voice / microphone
+        - Push-to-talk paddle
+        - Touch keyboard
+        - Window size / full screen
+        - Memory / battery
+        - Install / upgrade
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened and how to reproduce it
+      placeholder: 1. Joined a voice call 2. Closed Game Bar 3. Pressed M2 ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: power.log
+      description: |
+        Paste the last ~100 lines of `%LOCALAPPDATA%\Packages\DiscordBar.Widget_*\LocalState\power.log`
+        (paste that path into File Explorer's address bar). It contains no message content.
+      render: text

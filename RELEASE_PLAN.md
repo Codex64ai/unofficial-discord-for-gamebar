@@ -6,6 +6,10 @@ The build still carries the diagnostics that got us here. Two phases: make it a 
 
 ## Phase 1 — clean-up and re-optimization (target: v1.0.0)
 
+**Status 2026-10-22:** items 1, 4 and 6 done in 1.0.0 Beta 1. Item 2 measured on the dev PC: helper
+private bytes 21 MB (CLR overhead); C++ port deferred to Beta 2. Items 3 and 5 (Ally measurements and
+the full test matrix) are the beta's job: results go into README's table and CHANGELOG.
+
 Goal: same behavior, nothing in the package that exists only for debugging, numbers re-measured on the Ally.
 
 1. **Strip diagnostics from the shipping build** (keep them available for development).

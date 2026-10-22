@@ -70,5 +70,4 @@ Set-Content -Path $sedPath -Value $sed -Encoding ASCII
 & "$env:WINDIR\System32\iexpress.exe" /N /Q $sedPath | Out-Null
 if (-not (Test-Path $out)) { throw 'IExpress did not produce the installer.' }
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item (Join-Path $PSScriptRoot 'Measure-DiscordBar.ps1') (Split-Path $out -Parent) -Force
 "Installer: $out ({0:N1} MB)" -f ((Get-Item $out).Length / 1MB)

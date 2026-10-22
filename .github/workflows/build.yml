@@ -1,0 +1,34 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build push-to-talk key helper
+        run: msbuild KeyHelper\DiscordBar.KeyHelper.csproj /p:Configuration=Release /p:Platform=x64 /v:m
+
+      - name: Restore
+        run: msbuild DiscordBar.sln /t:Restore /p:Configuration=Release /p:Platform=x64 /v:m
+
+      # No signing key in CI: the package is produced unsigned as a build check and an artifact.
+      # Release builds are signed on the maintainer's machine (see README "Building from source").
+      - name: Build sideload package (unsigned)
+        run: msbuild DiscordBar.sln /p:Configuration=Release /p:Platform=x64 /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false /p:AppxPackageDir=AppPackages\ /v:m
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnofficialDiscordForGamebar-unsigned-msix
+          path: DiscordBar/AppPackages/**/*.msix
+          if-no-files-found: error

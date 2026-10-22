@@ -59,12 +59,11 @@ namespace DiscordBar
   // for real when the voice connection closes.
   const md = navigator.mediaDevices;
   let micTracks = [];
-  const releaseMic = (why) => {
+  const releaseMic = () => {
     if (!micTracks.length) return;
-    post('diag:mic capture released: ' + (why || '?'));
     for (const t of micTracks) if (t.__dbRealStop) t.__dbRealStop(); micTracks = [];
   };
-  window.__dbReleaseMic = why => releaseMic(why || 'host');
+  window.__dbReleaseMic = () => releaseMic();
   if (md && md.getUserMedia) {
     const live = new Set();
     const report = () => post(live.size > 0 ? 'mic:1' : 'mic:0');
@@ -78,7 +77,7 @@ namespace DiscordBar
       }
       const stream = await orig(constraints);
       if (audioOnly) {
-        releaseMic('new capture');
+        releaseMic();
         micTracks = stream.getAudioTracks();
         for (const t of micTracks) {
           live.add(t);
@@ -86,25 +85,15 @@ namespace DiscordBar
           t.__dbRealStop = () => { realStop(); live.delete(t); report(); };
           t.stop = () => { t.enabled = false; };   // Discord's 'stop' = silence, keep the device open
           t.addEventListener('ended', () => { live.delete(t); report(); });
-          // Diagnostics: the browser flags the track 'muted' when the OS/device stops delivering audio.
-          t.addEventListener('mute', () => post('diag:mic track muted by source'));
-          t.addEventListener('unmute', () => post('diag:mic track unmuted by source'));
         }
-        post('diag:mic capture started, muted=' + micTracks.map(t => t.muted).join(','));
       }
       report();
       return stream;
     };
   }
-  // Diagnostics: page visibility as Chromium sees it, and periodic mic track state while in a call.
-  document.addEventListener('visibilitychange', () => post('diag:page visibility=' + document.visibilityState));
-  setInterval(() => {
-    if (!micTracks.length) return;
-    post('diag:mic tracks ' + micTracks.map(t => t.readyState + '/enabled=' + t.enabled + '/muted=' + t.muted).join(' ') + ' visibility=' + document.visibilityState);
-  }, 15000);
-  // Third in-call signal, independent of WebRTC tracking: Discord shows a Disconnect button while
-  // connected to voice. Polled every 5 s, posted on change.
-  let lastCall = null, lastMicOpen = null, silencedAt = 0, domDiagAt = 0;
+  // In-call signals polled every 5 s and posted on change: Discord's own voice-connected cue (Disconnect
+  // button / Voice Connected text), and whether a mic capture is held open (muted or not = in a call).
+  let lastCall = null, lastMicOpen = null, silencedAt = 0;
   const callCues = () => {
     if (document.querySelector('button[aria-label*=""isconnect"" i], button[aria-label*=""leave call"" i], button[aria-label*=""end call"" i]')) return 'button';
     for (const e of document.querySelectorAll('div, span, h3')) {
@@ -115,22 +104,13 @@ namespace DiscordBar
   setInterval(() => {
     const cue = callCues();
     const inCall = !!cue;
-    if (inCall !== lastCall) { lastCall = inCall; post(inCall ? 'call:1' : 'call:0'); if (inCall) post('diag:call cue=' + cue); }
+    if (inCall !== lastCall) { lastCall = inCall; post(inCall ? 'call:1' : 'call:0'); }
     const micOpen = micTracks.some(t => t.readyState === 'live');
     if (micOpen !== lastMicOpen) { lastMicOpen = micOpen; post(micOpen ? 'micopen:1' : 'micopen:0'); }
     // Fallback only: Discord has had every track 'stopped' (silenced) for 30 min with no call cue -> let go.
     const allSilenced = micTracks.length && micTracks.every(t => !t.enabled);
-    if (allSilenced && !inCall) { if (!silencedAt) silencedAt = Date.now(); else if (Date.now() - silencedAt > 1800000) releaseMic('silenced 30 min, no call cue'); }
+    if (allSilenced && !inCall) { if (!silencedAt) silencedAt = Date.now(); else if (Date.now() - silencedAt > 1800000) releaseMic(); }
     else silencedAt = 0;
-    if (micTracks.length && Date.now() - domDiagAt > 60000) {
-      domDiagAt = Date.now();
-      const labels = [...document.querySelectorAll('button[aria-label]')].map(b => b.getAttribute('aria-label')).filter(l => /connect|call|leave|hang|voice|mute|deafen/i.test(l)).slice(0, 15);
-      const texts = [];
-      for (const e of document.querySelectorAll('div, span, h3, p')) {
-        if (e.childElementCount === 0 && /connected|voice|call/i.test(e.textContent || '') && (e.textContent || '').length < 40) { texts.push(e.textContent.trim()); if (texts.length >= 8) break; }
-      }
-      post('diag:dom cue=' + (cue || 'none') + ' buttons=' + labels.join(' | ') + ' texts=' + texts.join(' | '));
-    }
   }, 5000);
   const RPC = window.RTCPeerConnection;
   if (RPC) {
@@ -285,7 +265,6 @@ namespace DiscordBar
 })();";
 
         XboxGameBarWidget widget;
-        XboxGameBarAppTargetTracker targetTracker;
         static MainPage current;
         static DateTime lastHelperLaunch;
 
@@ -325,15 +304,6 @@ namespace DiscordBar
             return true;
         }
 
-        void LogAppTarget(string why)
-        {
-            try
-            {
-                var t = targetTracker?.GetTarget();
-                PowerLog(t == null ? $"TARGET none ({why})" : $"TARGET \"{t.DisplayName}\" game={t.IsGame} fullscreen={t.IsFullscreen} ({why})");
-            }
-            catch (Exception ex) { PowerLog("TARGET unavailable: " + ex.GetType().Name); }
-        }
         readonly DispatcherTimer suspendTimer = new DispatcherTimer { Interval = SuspendDelay };
         readonly DispatcherTimer unloadTimer = new DispatcherTimer { Interval = UnloadDelay };
         readonly DispatcherTimer closeTimer = new DispatcherTimer { Interval = CloseDelay };
@@ -362,9 +332,6 @@ namespace DiscordBar
         bool rtcLive;       // a WebRTC voice connection is open (in a voice channel, muted or not)
         bool callLive;      // Discord's page shows a voice-connected cue (DOM-based fallback signal)
         bool micOpen;       // the page holds an open microphone capture (muted or not) = in a call
-        bool voiceSocket;   // a WebSocket to a Discord voice server is open (CDP Network events; host-side, tamper-proof)
-        readonly HashSet<string> voiceSockets = new HashSet<string>();
-        CoreWebView2DevToolsProtocolEventReceiver wsCreated, wsClosed;
         bool relaying;      // guard: we are clearing KeyBox ourselves, ignore that TextChanged
         bool composing;     // touch keyboard is mid-composition; relay only the final text
         bool keyboardUp;    // Windows reports the input pane as showing
@@ -382,31 +349,23 @@ namespace DiscordBar
             var pane = InputPane.GetForCurrentView();
             pane.Showing += (s, a) => keyboardUp = true;
             pane.Hiding += InputPane_Hiding;
-            StartAudioDiagnostics();
+            StartAudioMonitor();
         }
 
-        // ---- Audio diagnostics: who mutes the call when the widget is hidden? ----------------
+        // Windows' own view of our audio session. "Muted" during a call means the Game Bar microphone
+        // activity is gone (badge tapped, or dropped by Game Bar); the watchdog below re-requests it.
         Windows.Media.Audio.AudioStateMonitor captureMon, renderMon;
 
-        void StartAudioDiagnostics()
+        void StartAudioMonitor()
         {
             try
             {
                 captureMon = Windows.Media.Audio.AudioStateMonitor.CreateForCaptureMonitoring();
-                captureMon.SoundLevelChanged += (s, a) => { PowerLog($"AUDIO capture level by Windows: {s.SoundLevel}"); OnWindowsAudioLevel(s.SoundLevel); };
+                captureMon.SoundLevelChanged += (s, a) => OnWindowsAudioLevel(s.SoundLevel);
                 renderMon = Windows.Media.Audio.AudioStateMonitor.CreateForRenderMonitoring();
-                renderMon.SoundLevelChanged += (s, a) => { PowerLog($"AUDIO render level by Windows: {s.SoundLevel}"); OnWindowsAudioLevel(s.SoundLevel); };
-                PowerLog($"AUDIO monitors started: capture={captureMon.SoundLevel} render={renderMon.SoundLevel}");
+                renderMon.SoundLevelChanged += (s, a) => OnWindowsAudioLevel(s.SoundLevel);
             }
-            catch (Exception ex) { PowerLog("AUDIO monitor error: " + ex.GetType().Name); }
-            try
-            {
-                var app = Windows.ApplicationModel.Core.CoreApplication.GetCurrentView();
-                Windows.ApplicationModel.Core.CoreApplication.EnteredBackground += (s, a) => PowerLog("APP entered background");
-                Windows.ApplicationModel.Core.CoreApplication.LeavingBackground += (s, a) => PowerLog("APP leaving background");
-                Window.Current.VisibilityChanged += (s, a) => PowerLog($"WINDOW visible={a.Visible}");
-            }
-            catch (Exception ex) { PowerLog("lifecycle hook error: " + ex.GetType().Name); }
+            catch (Exception ex) { PowerLog("audio monitor unavailable: " + ex.GetType().Name); }
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -425,13 +384,6 @@ namespace DiscordBar
                 // never cap it at runtime, so Game Bar is free to grant the largest size that fits.
                 TopBar.Visibility = Visibility.Visible;
                 SetupPushToTalk();
-                try
-                {
-                    targetTracker = new XboxGameBarAppTargetTracker(widget);
-                    targetTracker.TargetChanged += (s, a) => LogAppTarget("changed");
-                    LogAppTarget("start");
-                }
-                catch (Exception ex) { PowerLog("app target tracker unavailable: " + ex.GetType().Name); }
                 // XAML-side fallback: a paddle key that lands while a XAML control (KeyBox, buttons) has focus.
                 Window.Current.CoreWindow.Dispatcher.AcceleratorKeyActivated += (s, a) =>
                 {
@@ -447,16 +399,8 @@ namespace DiscordBar
 
             else
             {
-                // Standalone (Start menu) run: treat a minimized window as "hidden" so the same
-                // low-power path can be exercised and measured outside Game Bar. F9 toggles "hidden"
-                // without minimizing (a minimized UWP window gets frozen by Windows, which stops timers).
+                // Standalone (Start menu) run: a hidden window follows the same low-power path as a hidden widget.
                 Window.Current.VisibilityChanged += (s, a) => { standaloneVisible = a.Visible; ApplyState(); };
-                Window.Current.CoreWindow.Dispatcher.AcceleratorKeyActivated += (s, a) =>
-                {
-                    if (a.EventType != CoreAcceleratorKeyEventType.KeyDown) return;
-                    if (a.VirtualKey == VirtualKey.F9) { standaloneVisible = !standaloneVisible; ApplyState(); }
-                    if (a.VirtualKey == VirtualKey.F8) CloseBrowser();    // test the close tier without waiting
-                };
             }
 
             Environment.SetEnvironmentVariable("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", BrowserArgs);
@@ -504,63 +448,9 @@ namespace DiscordBar
             }
             catch (Exception) { }
 
-            // Voice-server WebSocket = the one signal Discord's page can't hide from us: it opens a socket to
-            // *.discord.media when joining voice and closes it on leave. The page-side RTCPeerConnection wrapper
-            // never fires on the Ally (Discord gets a pristine constructor), so this is the primary in-call signal.
-            try
-            {
-                voiceSockets.Clear(); voiceSocket = false;
-                await core.CallDevToolsProtocolMethodAsync("Network.enable", "{\"maxTotalBufferSize\":1024,\"maxResourceBufferSize\":1024}");
-                wsCreated = core.GetDevToolsProtocolEventReceiver("Network.webSocketCreated");
-                wsClosed = core.GetDevToolsProtocolEventReceiver("Network.webSocketClosed");
-                wsCreated.DevToolsProtocolEventReceived += (s, a) => OnWebSocket(a.ParameterObjectAsJson, true);
-                wsClosed.DevToolsProtocolEventReceived += (s, a) => OnWebSocket(a.ParameterObjectAsJson, false);
-            }
-            catch (Exception ex) { PowerLog("voice socket tracking unavailable: " + ex.Message); }
-
             core.Navigate(Home);
         }
 
-        void OnWebSocket(string json, bool created)
-        {
-            try
-            {
-                var o = Windows.Data.Json.JsonObject.Parse(json);
-                string id = o.GetNamedString("requestId", "");
-                if (created)
-                {
-                    string url = o.GetNamedString("url", "");
-                    string host = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host : url;
-                    bool voice = IsVoiceHost(host);
-                    PowerLog("WS open " + (voice ? "VOICE " : "") + host);
-                    if (!voice) return;
-                    voiceSockets.Add(id);
-                }
-                else
-                {
-                    if (!voiceSockets.Remove(id)) return;
-                    PowerLog("WS closed VOICE (" + voiceSockets.Count + " left)");
-                }
-                bool now = voiceSockets.Count > 0;
-                if (now == voiceSocket) return;
-                voiceSocket = now;
-                if (!now)
-                {
-                    // Voice left: let the page drop the real mic capture (we kept it open across mutes).
-                    try { _ = Web.CoreWebView2?.ExecuteScriptAsync("window.__dbReleaseMic && window.__dbReleaseMic('voice socket closed')"); } catch (Exception) { }
-                }
-                ApplyState();
-            }
-            catch (Exception ex) { PowerLog("WS parse failed: " + ex.Message); }
-        }
-
-        static bool IsVoiceHost(string host)
-        {
-            host = host.ToLowerInvariant();
-            if (host.EndsWith(".discord.media")) return true;
-            // Older voice servers: <region><n>.discord.gg, never the main gateway or remote-auth sockets.
-            return host.EndsWith(".discord.gg") && !host.StartsWith("gateway") && !host.StartsWith("remote-auth");
-        }
 
         public void Shutdown()
         {
@@ -636,7 +526,7 @@ namespace DiscordBar
 
         // ---- Power state -----------------------------------------------------
 
-        bool InCall => callLive || rtcLive || micLive || micOpen || voiceSocket;
+        bool InCall => callLive || rtcLive || micLive || micOpen;
         bool InVoice => InCall || (Web.CoreWebView2?.IsDocumentPlayingAudio ?? false);
 
         bool lastShown = true;
@@ -701,7 +591,7 @@ namespace DiscordBar
                 catch (Exception ex) { PowerLog($"push-to-talk combo {string.Join("+", combo)} unavailable: {ex.GetType().Name}"); }
             }
             lastPttSetup = DateTime.UtcNow;
-            PowerLog($"push-to-talk watchers registered: {ok}/{PushToTalkCombos.Length}");
+            if (ok < PushToTalkCombos.Length) PowerLog($"push-to-talk watchers registered: {ok}/{PushToTalkCombos.Length}");
         }
 
         // Paddle semantics, both at once:
@@ -841,7 +731,7 @@ namespace DiscordBar
             // Hotkey delivery has been seen to stop silently mid-call (keys resume only after focusing the
             // widget). Re-registering restored it before, so refresh the watchers every minute while in a call.
             if (DateTime.UtcNow - lastPttSetup > TimeSpan.FromSeconds(60) && DateTime.UtcNow - lastKeySeen > TimeSpan.FromSeconds(5))
-            { SetupPushToTalk(); LogAppTarget("watcher refresh"); }
+                SetupPushToTalk();
             bool muted = false;
             try { muted = captureMon != null && captureMon.SoundLevel == Windows.Media.SoundLevel.Muted; } catch (Exception) { }
             if (voiceActivity != null && !muted) return;
@@ -1001,7 +891,7 @@ namespace DiscordBar
             }
         }
 
-        // Tiny state log for checking the power path on the device:
+        // Small rolling log (64 KB) of state changes, push-to-talk results and crashes, for bug reports:
         //   %LOCALAPPDATA%\Packages\<pfn>\LocalState\power.log
         static readonly object logLock = new object();
         static void PowerLog(string what)
@@ -1028,17 +918,14 @@ namespace DiscordBar
                 case "mic:0": micLive = false; ApplyState(); break;
                 case "rtc:1": rtcLive = true; ApplyState(); break;
                 case "rtc:0": rtcLive = false; ApplyState(); break;
-                case "call:1": callLive = true; PowerLog("PAGE voice connected (call cue present)"); ApplyState(); break;
-                case "call:0": callLive = false; PowerLog("PAGE voice disconnected (no call cue)"); ApplyState(); break;
-                case "micopen:1": micOpen = true; PowerLog("PAGE mic capture open"); ApplyState(); break;
-                case "micopen:0": micOpen = false; PowerLog("PAGE mic capture released"); ApplyState(); break;
+                case "call:1": callLive = true; ApplyState(); break;
+                case "call:0": callLive = false; ApplyState(); break;
+                case "micopen:1": micOpen = true; ApplyState(); break;
+                case "micopen:0": micOpen = false; ApplyState(); break;
                 case "kb:1": OpenKeyboard(); break;
                 case string p when p.StartsWith("ptt:down:"): if (AcceptKeyEdge(true, "page " + p.Substring(9))) OnPushToTalk(true); break;
                 case string p when p.StartsWith("ptt:up:"): if (AcceptKeyEdge(false, "page " + p.Substring(7))) OnPushToTalk(false); break;
                 case "kb:0": CloseKeyboard(); break;
-                default:
-                    if (msg != null && msg.StartsWith("diag:")) PowerLog("PAGE " + msg.Substring(5));
-                    break;
             }
         }
 

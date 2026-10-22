@@ -359,3 +359,20 @@ Git repo initialised at v0.9.12; remote `origin` = https://github.com/Codex64ai/
 `*.pfx`, `bin/`, `obj/`, `AppPackages/`, `.vs/` are ignored; the dev signing key is never committed.
 Landing page target: https://codex64.net/discordforgamebar (apex is served through Cloudflare by an app
 that returns 404 for that path today; needs a path route or a static route in whatever serves the apex).
+
+## 1.0.0 Beta 1 (2026-10-22) — Phase 1 done
+Stripped from the shipping build: page `diag:` posts, the 15 s mic-track heartbeat, the DOM cue dump,
+CDP Network/voice-socket tracking (never fired on the Ally), the app-target tracker, AUDIO/APP/WINDOW
+lifecycle logging (the AudioStateMonitor itself stays: the keep-alive and watchdog use it), standalone
+F8/F9 keys, PAGE lines for call/micopen. Kept: state transitions, voice activity lines, KEY lines and
+push-to-talk results (needed to triage user reports), key helper connect/launch/ping-health lines,
+CRASH. Dev tools moved to `tools/` (Measure, Send-Log, log relay; LAN addresses replaced by
+placeholders) and no longer bundled by the installer.
+Measured on the dev PC standalone: DiscordBar.exe private 62 MB / helper private 21 MB (working set
+34 MB). The helper's 21 MB is CLR overhead; a C++ port (~1 MB) is the Beta 2 candidate if it matters.
+Verified after the strip: helper launch/connect, tap + 900 ms hold delivered, no ghost process, log is
+six lines at startup instead of dozens.
+Repo build-out: README (push-to-talk, mic badge, idle tiers, troubleshooting, build, credits),
+docs/ARCHITECTURE.md, docs/LANDING_PAGE_BRIEF.md (for the user's other agent), PRIVACY.md, CHANGELOG.md,
+LICENSE (MIT, codex64), CONTRIBUTING.md, CI workflow (unsigned msix artifact), issue templates,
+docs/images (banner, logo, asset sheet; screenshots still to be dropped in by the user).
