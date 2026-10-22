@@ -352,3 +352,10 @@ white splash glyph on #313338. Manifest display names changed; widget menu label
 Package identity `DiscordBar.Widget` and code namespaces deliberately unchanged (sideload upgrades).
 Installer output is now `UnofficialDiscordForGamebar-Setup.exe`. Plans for clean-up and release are in
 RELEASE_PLAN.md. The user reaffirmed name and mark after the trademark caveat; proceed with them.
+
+## Source control (2026-10-21)
+Git repo initialised at v0.9.12; remote `origin` = https://github.com/Codex64ai/unofficial-discord-for-gamebar
+(PRIVATE until the clean 1.0; default branch `main`; identity Ikram <ikramjr@mvpworks.com>, repo-local).
+`*.pfx`, `bin/`, `obj/`, `AppPackages/`, `.vs/` are ignored; the dev signing key is never committed.
+Landing page target: https://codex64.net/discordforgamebar (apex is served through Cloudflare by an app
+that returns 404 for that path today; needs a path route or a static route in whatever serves the apex).
