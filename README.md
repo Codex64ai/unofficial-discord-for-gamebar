@@ -17,11 +17,13 @@ Privacy: [PRIVACY.md](PRIVACY.md) · License: [MIT](LICENSE)
 
 ## Screenshots
 
-<!-- Drop the files into docs/images/ with these names and the table lights up. -->
+Coming with the public beta.
+<!-- Drop the files into docs/images/ with these names and restore the table:
 | | |
 |---|---|
 | ![Discord open in Game Bar](docs/images/widget-open.jpg) <br> *Full screen inside Game Bar, Back / Home / Mic strip on top* | ![Voice call with Game Bar closed](docs/images/voice-hidden.jpg) <br> *In a call with Game Bar closed: the mic badge is Game Bar keeping the audio alive* |
 | ![Touch keyboard](docs/images/keyboard.jpg) <br> *The Game Bar touch keyboard typing into Discord* | ![Paddle mapped to Numpad *](docs/images/armoury-m2.jpg) <br> *Armoury Crate: back paddle M2 mapped to Numpad `*`* |
+-->
 
 ## What you get
 
@@ -217,7 +219,6 @@ Project layout:
 | `DiscordBar/` | The UWP widget (WinUI 2, WebView2). `MainPage.xaml.cs` is the whole state machine. |
 | `KeyHelper/` | The push-to-talk key helper (classic .NET Framework, no NuGet). |
 | `installer/` | Installer build script, Setup.ps1, logo source and icon generator. |
-| `tools/` | Developer-only: memory measurement and a log relay for live debugging on a device. |
 | `docs/` | Architecture notes, images, landing-page brief. |
 | `CLAUDE.md` | The engineering log: every dead end and why the current design is what it is. |
 

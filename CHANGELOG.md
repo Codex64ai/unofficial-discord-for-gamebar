@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.0.0 Beta 1 — 2026-10-22
+## 1.0.1 (Beta 1) — 2026-10-22
 
-First public build. Everything below was built and verified on a ROG Xbox Ally X (Windows 11, Game Bar
+First public build (package version 1.0.1.0; 1.0.0.0 was the internal pre-check of the same code). Everything below was built and verified on a ROG Xbox Ally X (Windows 11, Game Bar
 compact/handheld UI).
 
 - Discord's web app as a full-screen Game Bar widget, with Back and Home buttons on the widget's own strip.

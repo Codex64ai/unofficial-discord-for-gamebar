@@ -355,7 +355,7 @@ RELEASE_PLAN.md. The user reaffirmed name and mark after the trademark caveat; p
 
 ## Source control (2026-10-21)
 Git repo initialised at v0.9.12; remote `origin` = https://github.com/Codex64ai/unofficial-discord-for-gamebar
-(PRIVATE until the clean 1.0; default branch `main`; identity Ikram <ikramjr@mvpworks.com>, repo-local).
+(PRIVATE until the public beta; default branch `main`; commits are authored as codex64, repo-local config).
 `*.pfx`, `bin/`, `obj/`, `AppPackages/`, `.vs/` are ignored; the dev signing key is never committed.
 Landing page target: https://codex64.net/discordforgamebar (apex is served through Cloudflare by an app
 that returns 404 for that path today; needs a path route or a static route in whatever serves the apex).
@@ -366,8 +366,8 @@ CDP Network/voice-socket tracking (never fired on the Ally), the app-target trac
 lifecycle logging (the AudioStateMonitor itself stays: the keep-alive and watchdog use it), standalone
 F8/F9 keys, PAGE lines for call/micopen. Kept: state transitions, voice activity lines, KEY lines and
 push-to-talk results (needed to triage user reports), key helper connect/launch/ping-health lines,
-CRASH. Dev tools moved to `tools/` (Measure, Send-Log, log relay; LAN addresses replaced by
-placeholders) and no longer bundled by the installer.
+CRASH. Dev tools (Measure, Send-Log, log relay) now live OUTSIDE the repo at C:\dev\discordbar-devtools and are
+not shipped; the public repo contains only the product.
 Measured on the dev PC standalone: DiscordBar.exe private 62 MB / helper private 21 MB (working set
 34 MB). The helper's 21 MB is CLR overhead; a C++ port (~1 MB) is the Beta 2 candidate if it matters.
 Verified after the strip: helper launch/connect, tap + 900 ms hold delivered, no ghost process, log is

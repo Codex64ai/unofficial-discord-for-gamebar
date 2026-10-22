@@ -8,12 +8,12 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap uap3 mp desktop rescap">
 
-  <Identity Name="DiscordBar.Widget" Publisher="CN=DiscordBarDev" Version="1.0.0.0" />
+  <Identity Name="DiscordBar.Widget" Publisher="CN=DiscordBarDev" Version="1.0.1.0" />
   <mp:PhoneIdentity PhoneProductId="4cbf4b58-c89d-46d7-bed0-48becf9f905f" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
   <Properties>
     <DisplayName>Unofficial Discord for Gamebar</DisplayName>
-    <PublisherDisplayName>Ikram</PublisherDisplayName>
+    <PublisherDisplayName>codex64</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
