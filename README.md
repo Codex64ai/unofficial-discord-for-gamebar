@@ -29,12 +29,9 @@ Coming with the public beta.
 
 - **Discord, full screen, inside Game Bar.** The widget asks Game Bar for the largest window it will grant
   and centers it. The desktop layout is used on purpose (Discord blocks voice on mobile browsers).
-- **Voice that survives closing Game Bar.** Join a channel or a call, press the Xbox button to get back
-  to the game, and the call keeps going. Mute and unmute from your push-to-talk button without opening Game Bar.
 - **Push-to-talk on any controller button.** Push-to-talk is the Numpad `*` key; map M1, M2, a back
   paddle or any other button to it. Tap to toggle the mic, hold to talk while held. Works whether
   Game Bar is open or closed, and the key never leaks into the game.
-- **Touch keyboard** that actually appears when you tap a text field inside Game Bar.
 - **Back and Home buttons** on a slim strip above the page, so a Discord help page or a link never traps
   you. Links to anything outside Discord open in your real browser.
 - **Light when you're not using it.** Hidden and not in a call, the page is suspended after 10 seconds,
@@ -55,11 +52,11 @@ Coming with the public beta.
 
 **From a release (today):** download `UnofficialDiscordForGamebar-Setup.exe` from
 [Releases](../../releases) and run it. It installs the package and, for this beta, the self-signed
-certificate it is signed with (a Microsoft Store build without that step is planned; see
-[RELEASE_PLAN.md](RELEASE_PLAN.md)). Upgrades: run the newer installer over the old one.
+certificate it is signed with a plan release for the Microsoft store (free just need to get it approved) 
+Upgrades: run the newer installer over the old one.
 
 Then press the **Xbox button** (or `Win+G`), open the widget menu, and pick **Unofficial Discord**.
-Pin it or make it a favorite so it sits in the home bar. Sign in with the QR code or your credentials.
+Pin it sits in the home bar. Sign in with the QR code or your credentials.
 Close the desktop Discord app if you have it, so Discord isn't running twice.
 
 ## Push-to-talk, in detail
@@ -224,22 +221,10 @@ with `DiscordBar\DiscordBar_TemporaryKey.pfx` (not in the repo; create your own 
 with `New-SelfSignedCertificate`, publisher `CN=DiscordBarDev`). CI builds an unsigned package on every
 push as a check.
 
-Project layout:
-
-| Path | What |
-|---|---|
-| `DiscordBar/` | The UWP widget (WinUI 2, WebView2). `MainPage.xaml.cs` is the whole state machine. |
-| `KeyHelper/` | The push-to-talk key helper (classic .NET Framework, no NuGet). |
-| `installer/` | Installer build script, Setup.ps1, logo source and icon generator. |
-| `docs/` | Architecture notes, images, landing-page brief. |
-| `CLAUDE.md` | The engineering log: every dead end and why the current design is what it is. |
-
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains the moving parts.
 
 ## Credits
 
-Designed, directed and tested on the Ally by **codex64**, built together with Claude (Anthropic's
-Claude Code) as pair programmer. Built on Microsoft's Xbox Game Bar SDK, WinUI 2 and WebView2.
+Designed, directed and tested on the Ally by Codex64, built together with Claude Code. Built on Microsoft's Xbox Game Bar SDK, WinUI 2 and WebView2.
 "Discord" is a trademark of Discord Inc.; this project is independent of it.
 
 ## License
