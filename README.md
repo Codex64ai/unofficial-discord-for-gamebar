@@ -12,12 +12,12 @@ running, and push-to-talk works from any controller button you map to it.
 > the official web app at discord.com inside a Microsoft Edge WebView2 control, exactly as a browser
 > would. It ships no Discord code, never uses the Discord API and never touches your token.
 
-Website: **https://codex64.net/discordforgamebar** · Download: [Releases](../../releases) ·
+Website: **Coming Soon!** · Download: [Releases](../../releases) ·
 Privacy: [PRIVACY.md](PRIVACY.md) · License: [MIT](LICENSE)
 
 ## Screenshots
 
-Coming with the public beta.
+Coming Soon!
 <!-- Drop the files into docs/images/ with these names and restore the table:
 | | |
 |---|---|
