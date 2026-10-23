@@ -136,6 +136,9 @@ for Discord voice; the key helper watches only the push-to-talk keys; a 64 KB lo
 
 ## 12. Screenshots to use
 
+Ready now in the repo: `docs/images/promo-1-gamebar.png`, `promo-2-servers.png`, `promo-3-keyboard.png`
+(1920x1080, real captures of the widget inside Game Bar, framed and captioned). Also still worth taking on the Ally:
+
 Take on the Ally (1920×1080 or 1080p screenshots via Game Bar's own capture or the device's
 screenshot shortcut):
 1. Discord open inside Game Bar, full screen, with the Back/Home/Mic strip visible.

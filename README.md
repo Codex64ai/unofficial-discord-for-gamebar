@@ -17,13 +17,11 @@ Privacy: [PRIVACY.md](PRIVACY.md) · License: [MIT](LICENSE)
 
 ## Screenshots
 
-Coming Soon!
-<!-- Drop the files into docs/images/ with these names and restore the table:
-| | |
-|---|---|
-| ![Discord open in Game Bar](docs/images/widget-open.jpg) <br> *Full screen inside Game Bar, Back / Home / Mic strip on top* | ![Voice call with Game Bar closed](docs/images/voice-hidden.jpg) <br> *In a call with Game Bar closed: the mic badge is Game Bar keeping the audio alive* |
-| ![Touch keyboard](docs/images/keyboard.jpg) <br> *The Game Bar touch keyboard typing into Discord* | ![Button mapped to Numpad *](docs/images/armoury-m2.jpg) <br> *Armoury Crate: a back button mapped to Numpad `*`* |
--->
+![Discord inside Xbox Game Bar](docs/images/promo-1-gamebar.png)
+
+![Servers one button away](docs/images/promo-2-servers.png)
+
+![The touch keyboard works inside Game Bar](docs/images/promo-3-keyboard.png)
 
 ## What you get
 
