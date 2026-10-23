@@ -23,6 +23,10 @@ Privacy: [PRIVACY.md](PRIVACY.md) · License: [MIT](LICENSE)
 
 ![The touch keyboard works inside Game Bar](docs/images/promo-3-keyboard.png)
 
+Straight capture, no frame: the ROG Ally server open inside Game Bar.
+
+![ROG Ally server inside Game Bar](docs/images/screenshot-server.png)
+
 ## What you get
 
 - **Discord, full screen, inside Game Bar.** The widget asks Game Bar for the largest window it will grant
