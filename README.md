@@ -17,13 +17,10 @@ Privacy: [PRIVACY.md](PRIVACY.md) · License: [MIT](LICENSE)
 
 ## Screenshots
 
-![Discord inside Xbox Game Bar](docs/images/promo-1-gamebar.png)
 
 ![Servers one button away](docs/images/promo-2-servers.png)
 
 ![The touch keyboard works inside Game Bar](docs/images/promo-3-keyboard.png)
-
-Straight capture, no frame: the ROG Ally server open inside Game Bar.
 
 ![ROG Ally server inside Game Bar](docs/images/screenshot-server.png)
 
