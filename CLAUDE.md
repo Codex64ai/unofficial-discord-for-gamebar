@@ -376,3 +376,15 @@ Repo build-out: README (push-to-talk, mic badge, idle tiers, troubleshooting, bu
 docs/ARCHITECTURE.md, docs/LANDING_PAGE_BRIEF.md (for the user's other agent), PRIVACY.md, CHANGELOG.md,
 LICENSE (MIT, codex64), CONTRIBUTING.md, CI workflow (unsigned msix artifact), issue templates,
 docs/images (banner, logo, asset sheet; screenshots still to be dropped in by the user).
+
+## 1.1.0.0 (2026-10-25) — push-to-talk and the key helper REMOVED
+The owner removed controller push-to-talk entirely: the full-trust KeyHelper (a .NET process with a
+system-wide WH_KEYBOARD_LL hook, running for as long as the widget did) cost performance on the handheld.
+Gone: the `KeyHelper` project, `windows.fullTrustProcess` + the `com.discordbar.keys` app service +
+`runFullTrust` (and the now-unused `desktop`/`rescap` namespaces), the WindowsDesktop SDK reference,
+App.OnBackgroundActivated / LaunchKeyHelper, and in MainPage the XboxGameBarHotkeyWatcher registration,
+page and XAML key capture, AcceptKeyEdge and the tap/hold logic. No restricted capabilities remain.
+Kept: the strip's Mic button (`__dbSetMicState`), hidden voice, idle tiers, touch keyboard, Back/Home,
+power.log. The v0.6.2-v0.9.11 notes above are history. Do NOT restore push-to-talk without the owner
+asking: Game Bar's hotkey watcher alone stops delivering once Game Bar dozes (v0.9.7), and the only
+working fix found was the hook helper this release deliberately dropped.

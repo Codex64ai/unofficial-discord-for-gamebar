@@ -9,7 +9,8 @@ Issues and pull requests are welcome. A few things that keep this project what i
 - **Keep the desktop user agent.** Discord blocks voice from mobile browsers.
 - **Verify on a device.** Game Bar behaves differently from a normal window (focus, keyboard, hotkeys,
   idle shutdown). A change to any of those needs a run on real Game Bar, ideally on a handheld.
-- Read `CLAUDE.md` before changing the voice, keyboard or push-to-talk paths: it records what was tried
+- Read `CLAUDE.md` before changing the voice or keyboard paths, or before proposing push-to-talk again
+  (it was removed in 1.1.0.0 for performance): it records what was tried
   and why the current design is the way it is.
 
 Build instructions are in the README.

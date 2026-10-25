@@ -27,7 +27,7 @@ body:
       label: Area
       options:
         - Voice / microphone
-        - Push-to-talk paddle
+        - Mic button
         - Touch keyboard
         - Window size / full screen
         - Memory / battery

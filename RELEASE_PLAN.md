@@ -10,6 +10,10 @@ The build still carries the diagnostics that got us here. Two phases: make it a 
 private bytes 21 MB (CLR overhead); C++ port deferred to Beta 2. Items 3 and 5 (Ally measurements and
 the full test matrix) are the beta's job: results go into README's table and CHANGELOG.
 
+**Status 2026-10-25 (1.1.0.0):** controller push-to-talk and the key helper were removed (the helper's
+system-wide keyboard hook cost performance on handhelds). Item 2 no longer applies, and the helper,
+hotkey and paddle parts of items 4 and 5 are dropped.
+
 Goal: same behavior, nothing in the package that exists only for debugging, numbers re-measured on the Ally.
 
 1. **Strip diagnostics from the shipping build** (keep them available for development).
@@ -44,10 +48,10 @@ Goal: same behavior, nothing in the package that exists only for debugging, numb
 ### A. GitHub (source, issues, sideload releases)
 1. Create the public repo `unofficial-discord-for-gamebar` under your account. `.gitignore` already
    excludes `bin/ obj/ AppPackages/ *.pfx *.user .vs/`; the dev signing key must never be committed.
-2. Add `LICENSE` (MIT), a README with screenshots, install steps for both channels, the paddle setup
-   including the Armoury Crate control-mode finding, FAQ and troubleshooting, and a `PRIVACY.md`.
-3. GitHub Actions (`windows-latest`): build the helper, then the solution, upload the `.msix` as an
-   artifact on every push; releases attach the installer exe + msix.
+2. Add `LICENSE` (MIT), a README with screenshots, install steps for both channels, FAQ and
+   troubleshooting, and a `PRIVACY.md`.
+3. GitHub Actions (`windows-latest`): build the solution, upload the `.msix` as an artifact on every
+   push; releases attach the installer exe + msix.
 4. Sideload builds need a real code-signing certificate or every user has to trust a test cert.
    Options: Azure Trusted Signing (about US$10/month, works with signtool) or SignPath (free for open
    source). Until then, the Store is the clean channel and the GitHub release is for people who can't
@@ -63,11 +67,10 @@ Goal: same behavior, nothing in the package that exists only for debugging, numb
 3. Submission content: description (state plainly that it wraps discord.com and is not affiliated with
    Discord Inc.), 4–6 screenshots at 1920×1080 from the Ally, age rating questionnaire, privacy policy
    URL (required: microphone + internet), support contact.
-4. Restricted capability `runFullTrust`: Partner Center asks for a justification. Text: the key helper
-   is a background keyboard hook for push-to-talk because Game Bar's hotkey API does not deliver while
-   Game Bar is closed; it reads only the configured push-to-talk keys and sends nothing off-device.
-5. Notes to certification testers: how to sign in, that voice needs a second account, which key the
-   paddle sends. Certification usually takes 1–3 business days.
+4. Capabilities: `internetClient`, `microphone` and `backgroundMediaPlayback` only. No restricted
+   capabilities, so Partner Center needs no capability justification.
+5. Notes to certification testers: how to sign in, and that voice needs a second account.
+   Certification usually takes 1–3 business days.
 6. Known risk: the app name and mark. If certification objects under the IP/branding policy, the plan is
    a second submission under a non-Discord name and the same mark; nothing else changes.
 
@@ -78,13 +81,12 @@ Goal: same behavior, nothing in the package that exists only for debugging, numb
 - **11.2 / name reservation:** "Discord" in the title may be refused; fallback name ready, same mark.
 - **10.5 Privacy:** public privacy policy URL (PRIVACY.md hosted on the landing page); description says the
   microphone is used only for Discord voice; no data collected.
-- **10.2 Security + restricted capability:** `runFullTrust` justification in the submission: the key helper
-  watches only the listed push-to-talk keys for a controller paddle, stores and transmits nothing; the
-  same disclosure appears in the description (undisclosed keystroke capture fails certification).
+- **10.2 Security:** no restricted capabilities are used (`internetClient`, `microphone`,
+  `backgroundMediaPlayback` only) and the app captures no keystrokes outside its own window.
 - **11.3 Age rating:** IARC answered truthfully (user-generated content, chat, unrestricted web); expect
   Teen or higher.
 - **Listing essentials:** ≥1 screenshot at 1366×768+, description, category Social, support contact,
-  notes for certification (sign-in steps, voice needs a second account, which key the paddle sends).
+  notes for certification (sign-in steps, voice needs a second account).
 - **Technical:** WACK pass; clean launch with no network and no sign-in; Store-assigned package identity
   in the manifest for the Store build (sideload installs become a separate app; users reinstall once).
 
@@ -92,9 +94,9 @@ Goal: same behavior, nothing in the package that exists only for debugging, numb
 - One static page plus a privacy policy page, e.g. `discord.codex64.net` or `/gamebar-discord`, hosted
   on Cloudflare Pages or the existing droplet behind the tunnel.
 - Sections: hero with the logo and one-line pitch · what it is (and is not) · features (voice with Game
-  Bar closed, paddle push-to-talk, touch keyboard, full screen, idle memory tiers) · screenshots/GIF ·
+  Bar closed, Mic button, touch keyboard, full screen, idle memory tiers) · screenshots/GIF ·
   Download: Store badge + GitHub release · requirements (Windows 11, Game Bar, WebView2 runtime) ·
-  paddle setup guide · FAQ · privacy · "Not affiliated with Discord Inc."
+  FAQ · privacy · "Not affiliated with Discord Inc."
 - I can build it from the repo assets once the Store link exists.
 
 ### Order

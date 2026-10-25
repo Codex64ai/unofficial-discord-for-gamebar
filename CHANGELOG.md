@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 — 2026-10-25
+
+Package version 1.1.0.0, the no push-to-talk version.
+
+- Removed controller push-to-talk and its key helper: the helper's system-wide keyboard hook cost
+  performance on handhelds. Mute from the widget's Mic button or Discord's own controls. No restricted
+  capabilities remain.
+
 ## 1.0.1 (Beta 1) — 2026-10-22
 
 First public build (package version 1.0.1.0; 1.0.0.0 was the internal pre-check of the same code). Everything below was built and verified on a ROG Xbox Ally X (Windows 11, Game Bar

@@ -1,31 +1,25 @@
 # Architecture
 
-Three moving parts, one state machine.
+Two moving parts, one state machine.
 
 ```
 ┌──────────────────────── Xbox Game Bar ────────────────────────┐
-│  widget window (XboxGameBarWidget)   hotkey watcher   activity │
-└───────────┬─────────────────────────────┬───────────────┬──────┘
-            │ hosts                       │ keys (fallback)│ mic activity (keeps audio alive while hidden)
+│  widget window (XboxGameBarWidget)                    activity │
+└───────────┬───────────────────────────────────────────────┬────┘
+            │ hosts                                         │ mic activity (keeps audio alive while hidden)
 ┌───────────▼───────────────────────────────────────────────────┐
 │  DiscordBar.exe  (UWP, WinUI 2)        MainPage.xaml.cs       │
 │   ├─ TopBar: Back / Home / Mic                                 │
 │   ├─ WebView2 ──► discord.com/app  (+ two injected scripts)    │
-│   ├─ KeyBox: invisible TextBox = touch-keyboard bridge         │
-│   └─ app service "com.discordbar.keys" (in-process)            │
-└───────────▲───────────────────────────────────────────────────┘
-            │ {key, down} over the app service, answered per message
-┌───────────┴───────────────────────────────────────────────────┐
-│  DiscordBar.KeyHelper.exe  (full trust, in the same package)   │
-│   WH_KEYBOARD_LL hook → queue → sender thread; swallows PTT keys│
+│   └─ KeyBox: invisible TextBox = touch-keyboard bridge         │
 └───────────────────────────────────────────────────────────────┘
 ```
 
 ## The widget (`DiscordBar/`)
 
 `App.xaml.cs` creates the `XboxGameBarWidget` on Game Bar activation (`ms-gamebarwidget` protocol) or a
-plain window on a Start-menu launch, hosts the in-process app service endpoint for the key helper, and
-writes crashes to the log.
+plain window on a Start-menu launch, releases the voice activity on suspend, and writes crashes to the
+log.
 
 `MainPage.xaml.cs` owns everything else:
 
@@ -41,9 +35,8 @@ writes crashes to the log.
   Disconnect button or "Voice Connected" text, polled every 5 s), `rtc:1/0` (wrapped RTCPeerConnection;
   Discord usually gets a pristine constructor, so this rarely fires). `KeyboardWatchScript` reports
   focus on editable elements (`kb:1/0`), exposes `__dbInsert/__dbBackspace/__dbEnter/__dbBlur` for the
-  keyboard bridge, exposes `__dbMicState/__dbSetMicState` (read/flip Discord's mute toggle, verified by
-  polling the button state every 50 ms), catches the push-to-talk keys when the page has focus
-  (`ptt:down/up`), and pauses `<video>` elements while hidden.
+  keyboard bridge, exposes `__dbSetMicState` (set Discord's mute toggle, verified by polling the button
+  state every 50 ms), and pauses `<video>` elements while hidden.
 - **State machine (`ApplyState`).** Inputs: `IsShown` (widget visible and not minimized), `InCall`
   (any of the page signals), `IsDocumentPlayingAudio`. Shown: resume/reload if needed, normal memory
   target (low when pinned over a game). Hidden in a call: page kept "visible" to the engine, low memory
@@ -57,35 +50,22 @@ writes crashes to the log.
   previous process's activity after an upgrade) is retried every 10 s and on show. A 20 s keep-alive tick
   re-requests when Windows reports our capture as muted. Suspending/shutdown releases the activity so an
   upgrade doesn't leave Game Bar holding it.
-- **Push-to-talk.** Four key sources, one de-duplicator (`AcceptKeyEdge`, 120 ms per edge): the key
-  helper, Game Bar's `XboxGameBarHotkeyWatcher` (re-registered on show/hide and every 60 s in a call),
-  the page listener, and `AcceleratorKeyActivated` on the XAML side. `OnPushToTalk` reads the real state,
-  flips it with one click, polls for the re-render, queues a press that lands mid-change, and closes on
-  release after a hold of 700 ms or more.
+- **Mic button.** The TopBar's Mic button reads Discord's real mute state from its toggle, flips it
+  through `__dbSetMicState` with one click, and updates its icon; the icon is also refreshed on show.
+  There is no controller push-to-talk (removed in 1.1.0.0, see CLAUDE.md).
 - **Touch keyboard bridge.** On `kb:1`, wait 500 ms; if no keyboard appeared, focus the invisible
   `KeyBox` and ask for the gamepad keyboard view. Text typed there is relayed into the page (whole
   compositions at once, so suggestions don't double characters); Backspace, Enter and Escape are
   forwarded as actions. The package manifest's Game Bar proxy/stub registration is required for any of
   this: without it Game Bar's input/focus IPC is dead and no control can summon a keyboard.
 
-## The key helper (`KeyHelper/`)
-
-A classic .NET Framework 4.7.2 executable declared as `windows.fullTrustProcess` and launched with
-`FullTrustProcessLauncher`. Single instance (named mutex; a newer helper kills an older one). Hook
-callback only classifies and enqueues; a sender thread does the cross-process call so the hook can never
-stall (Windows removes slow low-level hooks). Swallows the push-to-talk keys only while connected.
-Connects only when a widget process exists (opening the app service would otherwise start a headless
-widget), treats a link that dies within 3 s as a refusal (the widget refuses when it has no UI), checks
-every message's response, drops a dead link at once, re-hooks and pings every 30 s, exits after ~12 s
-without a widget process.
-
 ## Package manifest essentials
 
 `mp:PhoneIdentity`; `Windows.Universal` + `Windows.Desktop` device families; capabilities
-`internetClient`, `backgroundMediaPlayback`, `runFullTrust`, `microphone`; the Game Bar
+`internetClient`, `backgroundMediaPlayback`, `microphone` (no restricted capabilities); the Game Bar
 `microsoft.gameBarUIExtension` app extension (home-menu visible, pinning, favorite after install,
-compact-mode priority placement, 1280×720 default, min 480×360, max 8000×8000); `windows.fullTrustProcess`
-and `windows.appService` extensions; and the package-level `windows.activatableClass.proxyStub` block
+compact-mode priority placement, 1280×720 default, min 480×360, max 8000×8000); and the package-level
+`windows.activatableClass.proxyStub` block
 with the private Game Bar interfaces (the SDK requires it; NuGet doesn't add it; everything input-related
 breaks without it). Game Bar home-bar icons live in `GameBar\Icons` as monochrome `icon.targetsize-*.png`
 (white) and `icon.light.targetsize-*.png` (black).
@@ -95,6 +75,6 @@ breaks without it). Game Bar home-bar icons live in `GameBar\Icons` as monochrom
 - Discord blocks voice from mobile browsers: the desktop layout is unavoidable.
 - The microphone badge is Game Bar's and cannot be suppressed by the widget.
 - A background UWP app cannot start a microphone capture; hence the single long-lived capture per call.
-- Game Bar's hotkey watcher is unreliable once Game Bar dozes; hence the helper.
-- A key that the controller mapping software never sends (Armoury Crate Desktop mode on the Ally)
-  cannot be recovered by anything in the widget.
+- No controller push-to-talk: Game Bar's hotkey watcher stops delivering once Game Bar dozes, and the
+  full-trust keyboard-hook helper that worked around it cost performance on handhelds, so both were
+  removed in 1.1.0.0.

@@ -21,20 +21,18 @@ never sends anything to the developer.
   grants that permission to discord.com pages. It holds the capture open for the length of a voice call
   (also while you are muted) because a background app cannot reopen the device later; it is released when
   you leave the call. Audio goes only to Discord.
-- **Push-to-talk key.** A small helper process watches the keyboard for the specific push-to-talk keys you
-  may map to a controller paddle (numpad operators, F13–F16, Pause, Scroll Lock) and forwards "pressed" /
-  "released" for those keys to the widget. It does not read, log or transmit any other keystrokes.
 - **Local log.** A 64 KB rolling text file (`power.log` in the folder above) records the app's own state
-  changes (shown/hidden, voice start/stop, push-to-talk results, crashes) to help you report bugs. It
+  changes (shown/hidden, voice start/stop, mic button results, crashes) to help you report bugs. It
   contains no message content and never leaves your device unless you attach it to a bug report yourself.
 
 ## Permissions declared
 
 `internetClient` (reach discord.com), `microphone` (voice), `backgroundMediaPlayback` (keep audio
-running while the widget is hidden), `runFullTrust` (the push-to-talk helper process, see above).
+running while the widget is hidden). No restricted capabilities. The app does not watch the keyboard
+outside its own window.
 
 ## Contact
 
 Open an issue on the GitHub repository.
 
-_Last updated 2026-10-22._
+_Last updated 2026-10-25._
