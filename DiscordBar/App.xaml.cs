@@ -1,9 +1,6 @@
 using System;
 using Microsoft.Gaming.XboxGameBar;
-using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.AppService;
-using Windows.ApplicationModel.Background;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
@@ -55,69 +52,6 @@ namespace DiscordBar
                 d.Complete();
             };
             Window.Current.Activate();
-        }
-
-        // The key helper connects here (same package, in-process app service). Every message is one key edge.
-        BackgroundTaskDeferral keyServiceDeferral;
-        AppServiceConnection keyConnection;   // held on purpose: an unreferenced connection gets collected and goes silent
-        bool pingSeen;
-        public static bool KeyHelperConnected { get; private set; }
-
-        protected override void OnBackgroundActivated(BackgroundActivatedEventArgs args)
-        {
-            base.OnBackgroundActivated(args);
-            if (!(args.TaskInstance.TriggerDetails is AppServiceTriggerDetails details) || details.Name != "com.discordbar.keys") return;
-            if (!MainPage.HasUi) { MainPage.Log("key helper connection refused: no widget UI in this process"); return; }
-            keyServiceDeferral?.Complete();
-            keyServiceDeferral = args.TaskInstance.GetDeferral();
-            var connection = details.AppServiceConnection;
-            keyConnection = connection;
-            args.TaskInstance.Canceled += (s, e) =>
-            {
-                if (keyConnection == connection) { KeyHelperConnected = false; keyConnection = null; }
-                MainPage.Log("key helper service canceled: " + e);
-                keyServiceDeferral?.Complete(); keyServiceDeferral = null;
-            };
-            connection.ServiceClosed += (s, e) =>
-            {
-                if (keyConnection == connection) { KeyHelperConnected = false; keyConnection = null; }
-                MainPage.Log("key helper disconnected: " + e.Status);
-            };
-            connection.RequestReceived += async (s, e) =>
-            {
-                var d = e.GetDeferral();
-                try
-                {
-                    var m = e.Request.Message;
-                    if (m.ContainsKey("ping"))
-                    {
-                        bool hooked = m.ContainsKey("hook") && (bool)m["hook"];
-                        if (!hooked || !pingSeen) MainPage.Log($"key helper ping: hook={hooked} rehooks={(m.ContainsKey("rehooks") ? m["rehooks"] : "?")} failures={(m.ContainsKey("hookFailures") ? m["hookFailures"] : "?")}");
-                        pingSeen = true;
-                        await e.Request.SendResponseAsync(new Windows.Foundation.Collections.ValueSet { { "ok", true } });
-                        return;
-                    }
-                    string key = m.ContainsKey("key") ? m["key"] as string : null;
-                    bool down = m.ContainsKey("down") && (bool)m["down"];
-                    bool delivered = key != null && MainPage.OnHelperKey(key, down);
-                    await e.Request.SendResponseAsync(new Windows.Foundation.Collections.ValueSet { { "ok", delivered } });
-                }
-                catch (System.Exception ex) { MainPage.Log("key helper message error: " + ex.GetType().Name); }
-                finally { d.Complete(); }
-            };
-            KeyHelperConnected = true;
-            pingSeen = false;
-            MainPage.Log("key helper connected");
-        }
-
-        public static async void LaunchKeyHelper(string why)
-        {
-            try
-            {
-                await FullTrustProcessLauncher.LaunchFullTrustProcessForCurrentAppAsync();
-                MainPage.Log("key helper launched (" + why + ")");
-            }
-            catch (System.Exception ex) { MainPage.Log("key helper launch failed (" + why + "): " + ex.GetType().Name + " " + ex.Message); }
         }
 
         // Started from the Start menu instead of Game Bar: run as a normal window (handy for testing).

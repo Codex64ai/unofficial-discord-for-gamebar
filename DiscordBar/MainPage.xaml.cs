@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Text;
 using Microsoft.Gaming.XboxGameBar;
-using Microsoft.Gaming.XboxGameBar.Input;
 using Microsoft.Web.WebView2.Core;
 using Windows.Foundation;
 using Windows.Graphics.Display;
@@ -54,7 +52,7 @@ namespace DiscordBar
   const post = m => window.chrome.webview.postMessage(m);
   // Microphone: keep ONE capture open for the whole call. Discord stops the mic on self-mute and starts a
   // new capture on unmute, but Windows refuses to START a capture for a UWP app that isn't in the foreground
-  // (a hidden widget), so unmuting from the paddle with Game Bar closed went silent. Here 'stop' only
+  // (a hidden widget), so unmuting with Game Bar closed went silent. Here 'stop' only
   // silences the track and the next getUserMedia hands the same live track back; the device is released
   // for real when the voice connection closes.
   const md = navigator.mediaDevices;
@@ -162,13 +160,6 @@ namespace DiscordBar
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => { if (!editable(document.activeElement)) post('kb:0'); }, 200);
   }, true);
-  // Push-to-talk fallback: Game Bar's hotkey watcher has been seen to stop delivering until the widget
-  // has keyboard focus. When it does have focus, the paddle key reaches the page itself, so catch it here
-  // (host de-duplicates against the watcher). Swallowed so it never types a '*' into chat.
-  const pttCodes = new Set(['NumpadDivide','NumpadMultiply','NumpadSubtract','NumpadAdd','NumpadDecimal','F13','F14','F15','F16','Pause','ScrollLock']);
-  const pttKey = e => pttCodes.has(e.code) || ((e.ctrlKey && e.altKey) && /^Key[MVT]$/.test(e.code));
-  window.addEventListener('keydown', e => { if (!pttKey(e)) return; e.preventDefault(); e.stopPropagation(); if (!e.repeat) post('ptt:down:' + e.code); }, true);
-  window.addEventListener('keyup', e => { if (!pttKey(e)) return; e.preventDefault(); e.stopPropagation(); post('ptt:up:' + e.code); }, true);
   // Tapping a field that already has focus (keyboard was dismissed) should bring it back.
   document.addEventListener('pointerup', e => {
     if (editable(e.target) && document.activeElement === e.target) post('kb:1');
@@ -187,33 +178,6 @@ namespace DiscordBar
   };
   window.__dbBlur = () => { const el = target(); if (el) el.blur(); };
 
-  // Push-to-talk: open = unmute, !open = mute. Uses Discord's own mic button (aria-label is
-  // 'Mute' when live, 'Unmute' when muted); falls back to the Ctrl+Shift+M toggle shortcut.
-  window.__dbSetMic = open => {
-    // Discord has used both 'Mute'/'Unmute' and 'Turn Off Microphone'/'Turn On Microphone'.
-    const isMuted = l => /^(unmute|turn on microphone)$/i.test(l);
-    const isLive  = l => /^(mute|turn off microphone)$/i.test(l);
-    let btn = null, label = '';
-    // Prefer the mic button in the user's own panel (bottom-left); fall back to any matching button.
-    const scopes = [document.querySelector('section[aria-label=""User area""]'), document];
-    for (const scope of scopes) {
-      if (!scope) continue;
-      for (const b of scope.querySelectorAll('button[aria-label], [role=""button""][aria-label]')) {
-        const l = b.getAttribute('aria-label') || '';
-        if (isMuted(l) || isLive(l)) { btn = b; label = l; break; }
-      }
-      if (btn) break;
-    }
-    if (btn) {
-      const muted = isMuted(label);
-      if (open === muted) { btn.click(); return 'clicked ""' + label + '""'; }
-      return 'already ' + (open ? 'open' : 'closed') + ' (""' + label + '"")';
-    }
-    const init = { key: 'm', code: 'KeyM', keyCode: 77, which: 77, ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true };
-    document.dispatchEvent(new KeyboardEvent('keydown', init));
-    document.dispatchEvent(new KeyboardEvent('keyup', init));
-    return 'no mic button found; sent Ctrl+Shift+M';
-  };
   // Discord's self-mute is a toggle button: aria-label 'Mute'/'Unmute' with aria-checked (true = muted).
   // Discord re-renders it after a click, so state is always read from a FRESH lookup.
   const findMic = () => {
@@ -233,8 +197,7 @@ namespace DiscordBar
     if (c !== null) return c === 'true' ? 'muted' : 'live';
     return /^(unmute|turn on microphone)$/i.test(b.getAttribute('aria-label') || '') ? 'muted' : 'live';
   };
-  // Push-to-talk: make the mic match `open`. Idempotent, verified, retried: Discord occasionally drops a
-  // click (seen as muted -> muted), so the state is re-read and the click repeated up to twice.
+  // Mic button: make the mic match `open`. Idempotent: reads Discord's state first and clicks only if needed.
   window.__dbSetMicState = async open => {
     const want = open ? 'live' : 'muted';
     let b = findMic();
@@ -252,7 +215,6 @@ namespace DiscordBar
     }
     return before + ' -> ' + micState(findMic()) + ' (no change after 600 ms)';
   };
-  window.__dbMicState = () => micState(findMic());
 
   // Hidden widget: stop decoding video (streams, clips, GIF-videos). Audio elements and the
   // WebRTC voice path are left alone, so a call keeps going. Resumes only what we paused.
@@ -265,44 +227,6 @@ namespace DiscordBar
 })();";
 
         XboxGameBarWidget widget;
-        static MainPage current;
-        static DateTime lastHelperLaunch;
-
-        public static void Log(string line) => PowerLog(line);
-        public static bool HasUi => current != null;
-
-        // Key edge from the full-trust helper (any thread). Dedupe against Game Bar's own watcher, then the
-        // same press/release logic as every other path.
-        public static bool OnHelperKey(string key, bool down)
-        {
-            var page = current;
-            if (page == null) return false;
-            _ = page.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                if (page.AcceptKeyEdge(down, "helper " + key)) page.OnPushToTalk(down);
-            });
-            return true;
-        }
-
-        static void EnsureKeyHelper(string why)
-        {
-            if (App.KeyHelperConnected || DateTime.UtcNow - lastHelperLaunch < TimeSpan.FromSeconds(15)) return;
-            lastHelperLaunch = DateTime.UtcNow;
-            App.LaunchKeyHelper(why);
-        }
-
-        // One press may arrive from up to three paths (Game Bar watcher, the page, XAML focus); the first wins.
-        readonly DateTime[] lastKeyEdge = new DateTime[2];
-        bool AcceptKeyEdge(bool down, string source)
-        {
-            var now = DateTime.UtcNow;
-            int i = down ? 0 : 1;
-            if (now - lastKeyEdge[i] < TimeSpan.FromMilliseconds(120)) return false;
-            lastKeyEdge[i] = now;
-            lastKeySeen = now;
-            PowerLog($"KEY {source} {(down ? "down" : "up")}");
-            return true;
-        }
 
         readonly DispatcherTimer suspendTimer = new DispatcherTimer { Interval = SuspendDelay };
         readonly DispatcherTimer unloadTimer = new DispatcherTimer { Interval = UnloadDelay };
@@ -311,23 +235,6 @@ namespace DiscordBar
         bool webClosed;     // browser engine closed while hidden; recreated on show
         XboxGameBarWidgetActivity voiceActivity;   // tells Game Bar "voice chat in progress, don't idle-shutdown us"
 
-        // Push-to-talk. Game Bar delivers these key presses even while dismissed. Map a controller back
-        // button to any one of these keys (Armoury Crate / Command Center) and hold it to talk.
-        // Single keys for mappers that offer them, plus Ctrl+Alt combos for Armoury Crate's "Combine Keys"
-        // (its keyboard only goes up to F12).
-        static readonly VirtualKey[][] PushToTalkCombos =
-        {
-            // Preferred: numpad keys. Armoury Crate offers them (Numpad tab), games almost never bind them,
-            // and no modifier means nothing leaks into the game (Ctrl+Alt+M made games crouch / open menus).
-            new[] { VirtualKey.Divide }, new[] { VirtualKey.Multiply }, new[] { VirtualKey.Subtract },
-            new[] { VirtualKey.Add }, new[] { VirtualKey.Decimal },
-            new[] { VirtualKey.F13 }, new[] { VirtualKey.F14 }, new[] { VirtualKey.F15 }, new[] { VirtualKey.F16 },
-            new[] { VirtualKey.Pause }, new[] { VirtualKey.Scroll },
-            new[] { VirtualKey.Control, VirtualKey.Menu, VirtualKey.M },
-            new[] { VirtualKey.Control, VirtualKey.Menu, VirtualKey.V },
-            new[] { VirtualKey.Control, VirtualKey.Menu, VirtualKey.T },
-        };
-        readonly List<XboxGameBarHotkeyWatcher> pttWatchers = new List<XboxGameBarHotkeyWatcher>();
         bool micLive;
         bool rtcLive;       // a WebRTC voice connection is open (in a voice channel, muted or not)
         bool callLive;      // Discord's page shows a voice-connected cue (DOM-based fallback signal)
@@ -370,9 +277,7 @@ namespace DiscordBar
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            current = this;
             widget = e.Parameter as XboxGameBarWidget;
-            EnsureKeyHelper("start");
             if (widget != null)
             {
                 widget.VisibleChanged += Widget_StateChanged;
@@ -383,16 +288,6 @@ namespace DiscordBar
                 // Sizing is Game Bar's: the manifest max is large (like the Store browser widget) and we
                 // never cap it at runtime, so Game Bar is free to grant the largest size that fits.
                 TopBar.Visibility = Visibility.Visible;
-                SetupPushToTalk();
-                // XAML-side fallback: a paddle key that lands while a XAML control (KeyBox, buttons) has focus.
-                Window.Current.CoreWindow.Dispatcher.AcceleratorKeyActivated += (s, a) =>
-                {
-                    if (!IsPttKey(a.VirtualKey)) return;
-                    if (a.EventType == CoreAcceleratorKeyEventType.KeyDown || a.EventType == CoreAcceleratorKeyEventType.SystemKeyDown)
-                    { a.Handled = true; if (!a.KeyStatus.WasKeyDown && AcceptKeyEdge(true, "xaml " + a.VirtualKey)) OnPushToTalk(true); }
-                    else if (a.EventType == CoreAcceleratorKeyEventType.KeyUp || a.EventType == CoreAcceleratorKeyEventType.SystemKeyUp)
-                    { a.Handled = true; if (AcceptKeyEdge(false, "xaml " + a.VirtualKey)) OnPushToTalk(false); }
-                };
                 // Resize requests only succeed once the window is up.
                 Loaded += async (s, a) => await GoFullSizeAsync();
             }
@@ -529,16 +424,9 @@ namespace DiscordBar
         bool InCall => callLive || rtcLive || micLive || micOpen;
         bool InVoice => InCall || (Web.CoreWebView2?.IsDocumentPlayingAudio ?? false);
 
-        bool lastShown = true;
-
         async void Widget_StateChanged(XboxGameBarWidget sender, object args)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                ApplyState();
-                bool shown = IsShown;
-                if (shown != lastShown) { lastShown = shown; SetupPushToTalk(); }
-            });
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => ApplyState());
         }
 
         // Game Bar opening is the earliest hint the user may tap the widget: start bringing Discord back
@@ -564,92 +452,6 @@ namespace DiscordBar
             PowerLog("pre-warm: reloading Discord");
         }
 
-        static bool IsPttKey(VirtualKey k) =>
-            k == VirtualKey.Divide || k == VirtualKey.Multiply || k == VirtualKey.Subtract || k == VirtualKey.Add || k == VirtualKey.Decimal ||
-            k == VirtualKey.F13 || k == VirtualKey.F14 || k == VirtualKey.F15 || k == VirtualKey.F16 || k == VirtualKey.Pause || k == VirtualKey.Scroll;
-
-        void SetupPushToTalk()
-        {
-            // Re-registered on every show/hide transition in case Game Bar drops watchers silently.
-            foreach (var w in pttWatchers) { try { w.Stop(); } catch (Exception) { } }
-            pttWatchers.Clear();
-            int ok = 0;
-            foreach (var combo in PushToTalkCombos)
-            {
-                try
-                {
-                    var keys = string.Join("+", combo);
-                    var watcher = XboxGameBarHotkeyWatcher.CreateWatcher(widget, new List<VirtualKey>(combo));
-                    watcher.HotkeySetStateChanged += async (s, a) =>
-                    {
-                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => { if (AcceptKeyEdge(a.HotkeySetDown, keys)) OnPushToTalk(a.HotkeySetDown); });
-                    };
-                    watcher.Start();
-                    pttWatchers.Add(watcher);
-                    ok++;
-                }
-                catch (Exception ex) { PowerLog($"push-to-talk combo {string.Join("+", combo)} unavailable: {ex.GetType().Name}"); }
-            }
-            lastPttSetup = DateTime.UtcNow;
-            if (ok < PushToTalkCombos.Length) PowerLog($"push-to-talk watchers registered: {ok}/{PushToTalkCombos.Length}");
-        }
-
-        // Paddle semantics, both at once:
-        //   hold (released after TapWindow)  -> push-to-talk: live while held, muted on release
-        //   tap  (released within TapWindow) -> toggle: stays live; the next tap mutes
-        // Every change reads Discord's actual toggle state first, so it never double-flips.
-        static readonly TimeSpan TapWindow = TimeSpan.FromMilliseconds(700);
-        DateTime pttDownAt;
-        bool pttOpenedByPress;   // this press opened the mic (so a long hold closes it on release)
-
-        // No local memory of the mic state: every press reads Discord's real state and flips it, so muting
-        // from Discord's own button or the corner button can't desync the paddle.
-        // Serialized: one mic change at a time. A press that arrives while a change is in flight is queued
-        // (one slot) and applied right after, so a quick second tap is never lost and never interleaves.
-        bool pttBusy, pttQueued, pttCloseQueued;
-
-        async void OnPushToTalk(bool down)
-        {
-            if (down)
-            {
-                pttDownAt = DateTime.UtcNow;
-                if (pttBusy) { pttQueued = true; PowerLog("push-to-talk: press queued (previous change still applying)"); return; }
-                pttBusy = true;
-                try
-                {
-                    do
-                    {
-                        pttQueued = false; pttCloseQueued = false;
-                        var state = await ReadMicStateAsync();
-                        pttOpenedByPress = state != "live";
-                        await SetMicStateAsync(pttOpenedByPress);   // muted -> open, live -> close
-                        if (pttCloseQueued && pttOpenedByPress) { PowerLog("push-to-talk: queued hold release, closing"); await SetMicStateAsync(false); }
-                    } while (pttQueued);
-                }
-                finally { pttBusy = false; pttQueued = false; pttCloseQueued = false; }
-            }
-            else
-            {
-                var held = DateTime.UtcNow - pttDownAt;
-                if (pttOpenedByPress && held >= TapWindow)
-                {
-                    PowerLog($"push-to-talk: hold ({held.TotalMilliseconds:0} ms), closing");
-                    if (pttBusy) { pttCloseQueued = true; return; }
-                    pttBusy = true;
-                    try { await SetMicStateAsync(false); } finally { pttBusy = false; }
-                }
-                else PowerLog($"push-to-talk: tap ({held.TotalMilliseconds:0} ms)");
-            }
-        }
-
-        async System.Threading.Tasks.Task<string> ReadMicStateAsync()
-        {
-            var core = Web.CoreWebView2;
-            if (core == null || webClosed || unloaded) return "none";
-            try { return (await core.ExecuteScriptAsync("window.__dbMicState ? window.__dbMicState() : 'none'")).Trim('"'); }
-            catch (Exception) { return "none"; }
-        }
-
         const string MicOnGlyph = "";    // Segoe MDL2 "Microphone"
         const string MicOffGlyph = "";   // Segoe MDL2 "MicOff"
 
@@ -657,7 +459,7 @@ namespace DiscordBar
 
         async System.Threading.Tasks.Task SetMicStateAsync(bool open)
         {
-            if (webClosed || unloaded) { PowerLog("push-to-talk ignored: page not loaded"); return; }
+            if (webClosed || unloaded) { PowerLog("mic button ignored: page not loaded"); return; }
             var core = Web.CoreWebView2;
             if (core == null) return;
             try
@@ -670,13 +472,13 @@ namespace DiscordBar
                     await System.Threading.Tasks.Task.Delay(60);
                     result = await core.ExecuteScriptAsync("window.__dbLastMic || 'pending'");
                 }
-                PowerLog($"push-to-talk {(open ? "open" : "close")} -> {result}");
+                PowerLog($"mic button {(open ? "open" : "close")} -> {result}");
                 MicIcon.Glyph = open ? MicOnGlyph : MicOffGlyph;
             }
-            catch (Exception ex) { PowerLog("push-to-talk script error: " + ex.GetType().Name); }
+            catch (Exception ex) { PowerLog("mic button script error: " + ex.GetType().Name); }
         }
 
-        // On-widget mic button: same toggle as a paddle tap, and it refreshes the icon from Discord's real state.
+        // On-widget mic button: reads Discord's real state, flips it, and updates the icon.
         async void MicButton_Click(object sender, RoutedEventArgs e)
         {
             var core = Web.CoreWebView2;
@@ -721,17 +523,9 @@ namespace DiscordBar
         // and a re-request while hidden does sometimes succeed, so keep trying rather than waiting for show.)
         readonly DispatcherTimer keepAliveTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
 
-        DateTime lastPttSetup;
-        DateTime lastKeySeen;
-
         void KeepAliveTimer_Tick(object sender, object e)
         {
-            if (widget != null) EnsureKeyHelper("keep-alive: not connected");
             if (widget == null || !InCall) return;
-            // Hotkey delivery has been seen to stop silently mid-call (keys resume only after focusing the
-            // widget). Re-registering restored it before, so refresh the watchers every minute while in a call.
-            if (DateTime.UtcNow - lastPttSetup > TimeSpan.FromSeconds(60) && DateTime.UtcNow - lastKeySeen > TimeSpan.FromSeconds(5))
-                SetupPushToTalk();
             bool muted = false;
             try { muted = captureMon != null && captureMon.SoundLevel == Windows.Media.SoundLevel.Muted; } catch (Exception) { }
             if (voiceActivity != null && !muted) return;
@@ -891,7 +685,7 @@ namespace DiscordBar
             }
         }
 
-        // Small rolling log (64 KB) of state changes, push-to-talk results and crashes, for bug reports:
+        // Small rolling log (64 KB) of state changes, mic button results and crashes, for bug reports:
         //   %LOCALAPPDATA%\Packages\<pfn>\LocalState\power.log
         static readonly object logLock = new object();
         static void PowerLog(string what)
@@ -923,8 +717,6 @@ namespace DiscordBar
                 case "micopen:1": micOpen = true; ApplyState(); break;
                 case "micopen:0": micOpen = false; ApplyState(); break;
                 case "kb:1": OpenKeyboard(); break;
-                case string p when p.StartsWith("ptt:down:"): if (AcceptKeyEdge(true, "page " + p.Substring(9))) OnPushToTalk(true); break;
-                case string p when p.StartsWith("ptt:up:"): if (AcceptKeyEdge(false, "page " + p.Substring(7))) OnPushToTalk(false); break;
                 case "kb:0": CloseKeyboard(); break;
             }
         }

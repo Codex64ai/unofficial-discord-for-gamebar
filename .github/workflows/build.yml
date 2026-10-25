@@ -15,9 +15,6 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build push-to-talk key helper
-        run: msbuild KeyHelper\DiscordBar.KeyHelper.csproj /p:Configuration=Release /p:Platform=x64 /v:m
-
       - name: Restore
         run: msbuild DiscordBar.sln /t:Restore /p:Configuration=Release /p:Platform=x64 /v:m
 

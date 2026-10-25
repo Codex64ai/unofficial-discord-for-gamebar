@@ -4,11 +4,9 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
-  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap3 mp desktop rescap">
+  IgnorableNamespaces="uap uap3 mp">
 
-  <Identity Name="DiscordBar.Widget" Publisher="CN=DiscordBarDev" Version="1.0.1.0" />
+  <Identity Name="DiscordBar.Widget" Publisher="CN=DiscordBarDev" Version="1.1.0.0" />
   <mp:PhoneIdentity PhoneProductId="4cbf4b58-c89d-46d7-bed0-48becf9f905f" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
   <Properties>
@@ -71,13 +69,6 @@
             </uap3:Properties>
           </uap3:AppExtension>
         </uap3:Extension>
-        <!-- Push-to-talk key helper: Game Bar's hotkey watcher stops delivering once Game Bar dozes (ROG Ally),
-             so a tiny full-trust process hooks the paddle key itself and hands it to the widget over this
-             app service (in-process: no EntryPoint). It also swallows the key so games never see it. -->
-        <desktop:Extension Category="windows.fullTrustProcess" Executable="KeyHelper\DiscordBar.KeyHelper.exe" />
-        <uap:Extension Category="windows.appService">
-          <uap:AppService Name="com.discordbar.keys" />
-        </uap:Extension>
       </Extensions>
     </Application>
   </Applications>
@@ -122,7 +113,6 @@
          Windows mutes a UWP app's streams when it goes to the background otherwise; the Xbox app's party
          chat declares the same capability. -->
     <uap3:Capability Name="backgroundMediaPlayback" />
-    <rescap:Capability Name="runFullTrust" />
     <DeviceCapability Name="microphone" />
   </Capabilities>
 </Package>
